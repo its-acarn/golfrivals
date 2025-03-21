@@ -14,9 +14,11 @@ const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;
 
 export async function GET(
   request: Request,
-  { params }: { params: { code: string } }
+  context: { params: { code: string } }
 ) {
   try {
+    // Properly await the entire params object first
+    const params = await context.params;
     const groupCode = params.code;
 
     if (!groupCode) {
