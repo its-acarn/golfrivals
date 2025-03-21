@@ -2,8 +2,6 @@
 command = "npm run build"
 cwd = "."
 
-[build.upload]
-format = "service-worker"
-
 [site]
-bucket = ".next" 
+bucket = ".next"
+main = "workers-site/index.js" 
