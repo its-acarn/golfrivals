@@ -22,7 +22,7 @@ export default function MatchForm({ onSubmit }: MatchFormProps) {
         const groupCode = localStorage.getItem('groupCode');
         if (!groupCode) return;
 
-        const response = await fetch(`/api/groups/${groupCode}/players`);
+        const response = await fetch(`/api/groups/${groupCode}/players?groupCode=${groupCode}`);
         if (!response.ok) throw new Error('Failed to fetch players');
         
         const data = await response.json();

@@ -12,14 +12,10 @@ const auth = new google.auth.GoogleAuth({
 const sheets = google.sheets({ version: 'v4', auth });
 const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;
 
-export async function GET(
-  request: Request,
-  context: { params: { code: string } }
-) {
+export async function GET(request: Request) {
   try {
-    // Properly await the entire params object first
-    const params = await context.params;
-    const groupCode = params.code;
+    const { searchParams } = new URL(request.url);
+    const groupCode = searchParams.get('groupCode');
 
     if (!groupCode) {
       return NextResponse.json(
