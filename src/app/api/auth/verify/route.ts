@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const { code } = await request.json();
 
     // Validate code format
-    if (!/^\d{5}$/.test(code)) {
+    if (!/^[A-Z0-9]{5}$/.test(code)) {
       return NextResponse.json(
         { error: 'Invalid code format' },
         { status: 400 }

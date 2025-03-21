@@ -54,11 +54,11 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               type="text"
-              placeholder="Enter 5-digit code"
+              placeholder="Enter group code"
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
               maxLength={5}
-              pattern="[0-9]{5}"
+              pattern="[A-Z0-9]{5}"
               required
             />
             <Button type="submit" className="w-full" disabled={isLoading}>
