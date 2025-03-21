@@ -24,6 +24,7 @@ export async function GET(request: Request) {
       );
     }
 
+    // Get data from the group-specific sheet
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: `Group_${groupCode}!A:B`, // Assuming columns A and B contain name and score
