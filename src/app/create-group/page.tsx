@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Link from "next/link";
 
 export default function CreateGroupPage() {
   const [groupCode, setGroupCode] = useState('');
@@ -235,6 +236,11 @@ export default function CreateGroupPage() {
             </Button>
           </form>
         </CardContent>
+        <CardFooter className="flex justify-center">
+          <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">
+            Back to login
+          </Link>
+        </CardFooter>
       </Card>
     </main>
   );
