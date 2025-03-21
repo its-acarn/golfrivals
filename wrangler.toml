@@ -4,4 +4,7 @@ cwd = "."
 
 [site]
 bucket = ".next"
-main = "workers-site/index.js" 
+main = "workers-site/index.js"
+
+name = "golfrivals"
+compatibility_date = "2025-03-21" 
