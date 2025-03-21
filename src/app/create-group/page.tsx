@@ -15,12 +15,24 @@ export default function CreateGroupPage() {
   const [players, setPlayers] = useState<string[]>(['', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [adminCode, setAdminCode] = useState('');
+  const [errors, setErrors] = useState<{
+    groupCode?: string;
+    players?: string[];
+    adminCode?: string;
+  }>({});
   const router = useRouter();
 
   const handlePlayerChange = (index: number, value: string) => {
     const newPlayers = [...players];
     newPlayers[index] = value;
     setPlayers(newPlayers);
+    // Clear player error when user types
+    if (errors.players?.[index]) {
+      setErrors(prev => ({
+        ...prev,
+        players: prev.players?.map((err, i) => i === index ? '' : err)
+      }));
+    }
   };
 
   const handlePlayerCountChange = (value: string) => {
@@ -38,40 +50,68 @@ export default function CreateGroupPage() {
   };
 
   const handleGroupCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only allow alphanumeric characters and limit to 5 characters
     const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 5).toUpperCase();
     setGroupCode(value);
+    // Clear group code error when user types
+    if (errors.groupCode) {
+      setErrors(prev => ({ ...prev, groupCode: undefined }));
+    }
+  };
+
+  const handleAdminCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAdminCode(e.target.value);
+    // Clear admin code error when user types
+    if (errors.adminCode) {
+      setErrors(prev => ({ ...prev, adminCode: undefined }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+    let isValid = true;
+
+    // Validate group code
+    if (!/^[A-Z0-9]{5}$/.test(groupCode)) {
+      newErrors.groupCode = 'Group code must be exactly 5 characters (letters or numbers)';
+      isValid = false;
+    }
+
+    // Validate players
+    const playerErrors = players.map(player => {
+      if (!player.trim()) return 'Player name is required';
+      return '';
+    });
+    if (playerErrors.some(error => error)) {
+      newErrors.players = playerErrors;
+      isValid = false;
+    }
+
+    // Check for duplicate player names
+    const uniqueNames = new Set(players.map(p => p.trim()));
+    if (uniqueNames.size !== players.length) {
+      newErrors.players = playerErrors.map((_, index) => 
+        players.filter(p => p.trim() === players[index].trim()).length > 1 
+          ? 'Duplicate player name' 
+          : ''
+      );
+      isValid = false;
+    }
+
+    // Validate admin code
+    if (adminCode !== process.env.NEXT_PUBLIC_ADMIN_CREATE_CODE) {
+      newErrors.adminCode = 'Invalid admin code';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Validate group code
-    if (!/^[A-Z0-9]{5}$/.test(groupCode)) {
-      toast.error('Group code must be exactly 5 characters (letters or numbers)');
-      setIsLoading(false);
-      return;
-    }
-
-    // Validate all players have names
-    if (players.some(player => !player.trim())) {
-      toast.error('All player names must be filled in');
-      setIsLoading(false);
-      return;
-    }
-
-    // Check for duplicate player names
-    const uniqueNames = new Set(players.map(p => p.trim()));
-    if (uniqueNames.size !== players.length) {
-      toast.error('All player names must be unique');
-      setIsLoading(false);
-      return;
-    }
-
-    // Validate admin code
-    if (adminCode !== process.env.NEXT_PUBLIC_ADMIN_CREATE_CODE) {
-      toast.error('Invalid admin code');
+    if (!validateForm()) {
       setIsLoading(false);
       return;
     }
@@ -131,7 +171,11 @@ export default function CreateGroupPage() {
                 onChange={handleGroupCodeChange}
                 maxLength={5}
                 required
+                className={errors.groupCode ? "border-[hsl(var(--destructive))]" : ""}
               />
+              {errors.groupCode && (
+                <p className="text-[10px] text-[hsl(var(--destructive))] mt-1">{errors.groupCode}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -162,7 +206,11 @@ export default function CreateGroupPage() {
                   onChange={(e) => handlePlayerChange(index, e.target.value)}
                   placeholder={`Player ${index + 1}'s name`}
                   required
+                  className={errors.players?.[index] ? "border-[hsl(var(--destructive))]" : ""}
                 />
+                {errors.players?.[index] && (
+                  <p className="text-[10px] text-[hsl(var(--destructive))] mt-1">{errors.players[index]}</p>
+                )}
               </div>
             ))}
 
@@ -172,10 +220,14 @@ export default function CreateGroupPage() {
                 id="adminCode"
                 type="password"
                 value={adminCode}
-                onChange={(e) => setAdminCode(e.target.value)}
+                onChange={handleAdminCodeChange}
                 placeholder="Enter admin code"
                 required
+                className={errors.adminCode ? "border-[hsl(var(--destructive))]" : ""}
               />
+              {errors.adminCode && (
+                <p className="text-[10px] text-[hsl(var(--destructive))] mt-1">{errors.adminCode}</p>
+              )}
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
