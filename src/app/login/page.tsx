@@ -34,7 +34,7 @@ export default function LoginPage() {
       localStorage.setItem('groupCode', code);
       router.push('/');
       toast.success('Successfully logged in!');
-    } catch (error) {
+    } catch {
       toast.error('Invalid code. Please try again.');
     } finally {
       setIsLoading(false);
