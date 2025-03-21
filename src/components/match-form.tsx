@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Select } from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card";
 
 interface MatchFormProps {
@@ -10,30 +9,32 @@ interface MatchFormProps {
 }
 
 export default function MatchForm({ onSubmit }: MatchFormProps) {
-  const [playerCount, setPlayerCount] = useState<number>(2);
-  const [players, setPlayers] = useState<string[]>(['', '']);
+  const [winner, setWinner] = useState<string>('');
+  const [players, setPlayers] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 
-  const handlePlayerChange = (index: number, value: string) => {
-    const newPlayers = [...players];
-    newPlayers[index] = value;
-    setPlayers(newPlayers);
-  };
+  useEffect(() => {
+    // Fetch players from the group
+    const fetchPlayers = async () => {
+      try {
+        const groupCode = localStorage.getItem('groupCode');
+        if (!groupCode) return;
 
-  const handlePlayerCountChange = (count: number) => {
-    setPlayerCount(count);
-    
-    // Resize players array based on count
-    if (count > players.length) {
-      // Add empty players
-      setPlayers([...players, ...Array(count - players.length).fill('')]);
-    } else if (count < players.length) {
-      // Remove excess players
-      setPlayers(players.slice(0, count));
-    }
-  };
+        const response = await fetch(`/api/groups/${groupCode}/players`);
+        if (!response.ok) throw new Error('Failed to fetch players');
+        
+        const data = await response.json();
+        setPlayers(data.players);
+      } catch (error) {
+        console.error('Error fetching players:', error);
+        setError('Failed to load players');
+      }
+    };
+
+    fetchPlayers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,26 +42,18 @@ export default function MatchForm({ onSubmit }: MatchFormProps) {
     setError(null);
     setSuccess(false);
 
-    // Validate all players have names
-    if (players.some(player => !player.trim())) {
-      setError('All player names must be filled in');
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Check for duplicate player names
-    const uniqueNames = new Set(players.map(p => p.trim()));
-    if (uniqueNames.size !== players.length) {
-      setError('All player names must be unique');
+    if (!winner) {
+      setError('Please select a winner');
       setIsSubmitting(false);
       return;
     }
 
     try {
-      await onSubmit(players);
+      // Get all players except the winner
+      const otherPlayers = players.filter(p => p !== winner);
+      await onSubmit([winner, ...otherPlayers]);
       setSuccess(true);
-      // Reset form
-      setPlayers(Array(playerCount).fill(''));
+      setWinner('');
     } catch {
       setError('Failed to submit match result. Please try again.');
     } finally {
@@ -73,38 +66,29 @@ export default function MatchForm({ onSubmit }: MatchFormProps) {
       <CardHeader>
         <CardTitle>Record Match Result</CardTitle>
         <CardDescription>
-          Enter the players who participated in this match.
-          The winner gets +1 point in the ranking.
+          Select the winner of the match. The winner gets +1 point in the ranking.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="playerCount">Number of Players</Label>
+            <Label htmlFor="winner">Winner</Label>
             <Select 
-              id="playerCount" 
-              value={playerCount.toString()} 
-              onChange={(e) => handlePlayerCountChange(parseInt(e.target.value))}
+              value={winner} 
+              onValueChange={setWinner}
             >
-              <option value="2">2 Players</option>
-              <option value="3">3 Players</option>
-              <option value="4">4 Players</option>
+              <SelectTrigger>
+                <SelectValue placeholder="Select winner" />
+              </SelectTrigger>
+              <SelectContent>
+                {players.map((player) => (
+                  <SelectItem key={player} value={player}>
+                    {player}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
-          
-          {Array.from({ length: playerCount }).map((_, index) => (
-            <div key={index} className="space-y-2">
-              <Label htmlFor={`player-${index}`}>
-                {index === 0 ? "Winner" : `Player ${index + 1}`}
-              </Label>
-              <Input
-                id={`player-${index}`}
-                value={players[index]}
-                onChange={(e) => handlePlayerChange(index, e.target.value)}
-                placeholder={index === 0 ? "Winner's name" : `Player ${index + 1}'s name`}
-              />
-            </div>
-          ))}
 
           {error && (
             <div className="text-[hsl(var(--destructive))] text-sm">{error}</div>
@@ -119,7 +103,7 @@ export default function MatchForm({ onSubmit }: MatchFormProps) {
         <Button 
           type="submit" 
           onClick={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || !winner}
           className="w-full"
         >
           {isSubmitting ? "Submitting..." : "Record Match Result"}

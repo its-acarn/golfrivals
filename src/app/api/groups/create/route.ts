@@ -62,38 +62,11 @@ async function isGroupCodeUnique(code: string): Promise<boolean> {
 
 export async function POST(request: Request) {
   try {
-    // Check for missing environment variables
-    if (missingEnvVars.length > 0) {
-      console.error('Missing required environment variables:', missingEnvVars.join(', '));
+    const { groupCode, players } = await request.json();
+
+    if (!groupCode || !players || !Array.isArray(players) || players.length < 2) {
       return NextResponse.json(
-        { 
-          error: 'Server configuration error',
-          details: `Missing required environment variables: ${missingEnvVars.join(', ')}`
-        },
-        { status: 500 }
-      );
-    }
-
-    console.log('request', request);
-
-    // Parse the request body
-    const body = await request.json();
-    console.log('Request body:', body);
-
-    // Check if groupCode exists in the body
-    if (!body || !body.groupCode) {
-      return NextResponse.json(
-        { error: 'Group code is required' },
-        { status: 400 }
-      );
-    }
-
-    const groupCode = String(body.groupCode).trim();
-    console.log('Group code:', groupCode);
-
-    if (!groupCode) {
-      return NextResponse.json(
-        { error: 'Group code cannot be empty' },
+        { error: 'Invalid group data' },
         { status: 400 }
       );
     }
@@ -115,8 +88,6 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(`Creating new sheet for group with code ${groupCode}`);
-
     // Create a new sheet for the group
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
@@ -133,13 +104,24 @@ export async function POST(request: Request) {
       },
     });
 
-    // Initialize the sheet with headers
+    // Initialize the sheet with headers and players
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `Group_${groupCode.toUpperCase()}!A1:B1`,
       valueInputOption: 'RAW',
       requestBody: {
         values: [['Player', 'Score']],
+      },
+    });
+
+    // Add players with initial score of 0
+    const playerData = players.map(player => [player, 0]);
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `Group_${groupCode.toUpperCase()}!A2:B${playerData.length + 1}`,
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: playerData,
       },
     });
 
