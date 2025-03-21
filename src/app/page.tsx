@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import MatchForm from '../components/match-form';
 import Rankings from '../components/rankings';
+import { Button } from "@/components/ui/button";
 
 interface Player {
   name: string;
@@ -13,17 +15,24 @@ export default function Home() {
   const [rankings, setRankings] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-  // Fetch rankings on component mount
+  // Check authentication on component mount
   useEffect(() => {
+    const groupCode = localStorage.getItem('groupCode');
+    if (!groupCode) {
+      router.push('/login');
+      return;
+    }
     fetchRankings();
-  }, []);
+  }, [router]);
 
   const fetchRankings = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await fetch('/api/rankings');
+      const groupCode = localStorage.getItem('groupCode');
+      const response = await fetch(`/api/rankings?groupCode=${groupCode}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch rankings: ${response.status}`);
@@ -41,12 +50,13 @@ export default function Home() {
 
   const handleMatchSubmit = async (players: string[]) => {
     try {
+      const groupCode = localStorage.getItem('groupCode');
       const response = await fetch('/api/match', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ players }),
+        body: JSON.stringify({ players, groupCode }),
       });
 
       if (!response.ok) {
@@ -63,10 +73,20 @@ export default function Home() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('groupCode');
+    router.push('/login');
+  };
+
   return (
     <main className="min-h-screen flex flex-col items-center p-4 sm:p-8">
       <header className="w-full max-w-4xl text-center mb-8">
-        <h1 className="text-4xl font-bold mb-2">GolfRivals</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-4xl font-bold">GolfRivals</h1>
+          <Button variant="outline" onClick={handleLogout}>
+            Logout
+          </Button>
+        </div>
         <p className="text-[hsl(var(--muted-foreground))]">
           Track your golf matches and rankings with friends
         </p>
