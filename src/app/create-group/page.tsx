@@ -131,7 +131,12 @@ export default function CreateGroupPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to create group');
+        if (error.error === 'Group code already exists') {
+          setErrors(prev => ({ ...prev, groupCode: 'This group code is already taken. Please choose another one.' }));
+        } else {
+          throw new Error(error.error || 'Failed to create group');
+        }
+        return;
       }
 
       const data = await response.json();
