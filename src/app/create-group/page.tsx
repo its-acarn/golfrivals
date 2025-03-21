@@ -14,6 +14,7 @@ export default function CreateGroupPage() {
   const [playerCount, setPlayerCount] = useState<number>(2);
   const [players, setPlayers] = useState<string[]>(['', '']);
   const [isLoading, setIsLoading] = useState(false);
+  const [adminCode, setAdminCode] = useState('');
   const router = useRouter();
 
   const handlePlayerChange = (index: number, value: string) => {
@@ -64,6 +65,13 @@ export default function CreateGroupPage() {
     const uniqueNames = new Set(players.map(p => p.trim()));
     if (uniqueNames.size !== players.length) {
       toast.error('All player names must be unique');
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate admin code
+    if (adminCode !== process.env.NEXT_PUBLIC_ADMIN_CREATE_CODE) {
+      toast.error('Invalid admin code');
       setIsLoading(false);
       return;
     }
@@ -157,6 +165,18 @@ export default function CreateGroupPage() {
                 />
               </div>
             ))}
+
+            <div className="space-y-2">
+              <Label htmlFor="adminCode">Admin Code</Label>
+              <Input
+                id="adminCode"
+                type="password"
+                value={adminCode}
+                onChange={(e) => setAdminCode(e.target.value)}
+                placeholder="Enter admin code"
+                required
+              />
+            </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Creating...' : 'Create Group'}
